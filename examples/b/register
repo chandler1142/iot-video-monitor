@@ -1,0 +1,10 @@
+REGISTER sip:%s SIP/2.0
+From: <sip: %s@%s>;tag=%s
+To:<sip: %s@%s>
+Call-ID: %s
+Via: SIP/2.0/UDP %s:%d;rport;branch=z9hG4bK
+CSeq:1 REGISTER
+Contact:<sip: %s@%s:%d>
+User-Agent: IP CAMERA
+Expires:%d
+Content-Length:0
