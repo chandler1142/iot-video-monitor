@@ -3,10 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/google/gopacket/layers"
 	"iot-video-monitor/b"
 	"iot-video-monitor/config"
 	"time"
+	"github.com/marv2097/siprocket"
 )
 
 var (
@@ -28,7 +28,7 @@ func main() {
 
 	defer client.Close()
 
-	eventChan := make(chan *layers.SIP, 16)
+	eventChan := make(chan siprocket.SipMsg, 16)
 	go client.Recv(eventChan)
 	go client.ProcessPacket(eventChan)
 
@@ -37,11 +37,8 @@ func main() {
 		ch := time.After(5 * time.Second)
 		select {
 		case <-ch:
-			fmt.Println("Try to register to srever...")
 			if !client.Registered {
 				client.Register()
-			} else {
-				fmt.Println("注册完成")
 			}
 		}
 	}

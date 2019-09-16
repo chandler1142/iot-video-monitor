@@ -3,7 +3,7 @@ package b
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/google/gopacket/layers"
+	"github.com/marv2097/siprocket"
 	"io/ioutil"
 	"iot-video-monitor/config"
 	"log"
@@ -42,9 +42,9 @@ func NewClient(cfg *config.Config) (*Client, error) {
 		Registered:          false,
 		remoteAddr:          RemoteAddr,
 		localAddr:           LocalAddr,
-		cfg:                 cfg,
 		CallId:              GetRandomString(8),
 		FromTag:             GetRandomString(8),
+		SysAddrCode:         cfg.SysAddrCode,
 	}, nil
 
 }
@@ -63,15 +63,15 @@ func (client *Client) Register() bool {
 	template := string(buf)
 	message := fmt.Sprintf(template,
 		client.remoteAddr.IP,
-		client.cfg.SysAddrCode,
+		client.SysAddrCode,
 		client.remoteAddr.IP,
-		GetRandomString(8),
-		client.cfg.SysAddrCode,
+		client.FromTag,
+		client.SysAddrCode,
 		client.remoteAddr.IP,
 		client.CallId,
 		client.localAddr.IP,
 		client.localAddr.Port,
-		client.cfg.SysAddrCode,
+		client.SysAddrCode,
 		client.localAddr.IP,
 		client.localAddr.Port,
 		3600,
@@ -81,8 +81,39 @@ func (client *Client) Register() bool {
 	return true
 }
 
+//SIP/2.0 100 Trying
+//Via: SIP/2.0/UDP 22.46.93.183:5060;rport=5060;branch=z9hG4bK492ad
+//From: <sip:a978bab1a7c84c34bc3fd51d87c5c5da@22.46.93.183>;tag=40416f28
+//To: <sip:100010000003010002@22.46.93.183>
+//Call-ID: 2264a412a386@22.46.93.183
+//CSeq: 1 INVITE
+//User-Agent: IP CAMERA
+//Content-Length: 0
+func (client *Client) Trying() {
+	buf, err := ioutil.ReadFile(client.MessageTemplatePath + "trying")
+	if err != nil {
+		fmt.Printf("open file error: %v \n", err)
+		return
+	}
+
+	template := string(buf)
+	message := fmt.Sprintf(template,
+		client.remoteAddr.IP,
+		client.remoteAddr.Port,
+		client.remoteAddr.Port,
+		client.UserAddrCode,
+		client.remoteAddr.IP,
+		client.FromTag,
+		client.SysAddrCode,
+		client.remoteAddr.IP,
+		client.CallId,
+	)
+	client.conn.Write([]byte(message))
+	fmt.Printf("\n ===== Send message： =====\n%s\n", message)
+}
+
 //启动监听终端接收指令的goroutine
-func (client *Client) Recv(packetChan chan *layers.SIP) {
+func (client *Client) Recv(packetChan chan siprocket.SipMsg) {
 	if client.conn == nil {
 		fmt.Println("robot connection has not initialized...")
 		return
@@ -101,22 +132,29 @@ func (client *Client) Recv(packetChan chan *layers.SIP) {
 			fmt.Printf("received error packet is: %s \n", hex.EncodeToString(buf[:]))
 			break
 		}
-		sipPacket := layers.NewSIP()
-		sipPacket.DecodeFromBytes(buf[:n], nil)
+
+		sipMsg := siprocket.Parse(buf)
 		fmt.Printf("\n===== Receive message: =====\n%v \n", string(buf[:n]))
-		packetChan <- sipPacket
+		packetChan <- sipMsg
 	}
 }
 
-func (client *Client) ProcessPacket(packetChan chan *layers.SIP) {
+func (client *Client) ProcessPacket(packetChan chan siprocket.SipMsg) {
 	for {
 		select {
 		case packet := <-packetChan:
-			if packet.GetFirstHeader("cseq") == "REGISTER" && packet.ResponseCode == 200 {
+			//注册成功的消息
+			if string(packet.Cseq.Method) == "REGISTER" && string(packet.Req.StatusCode) == "200" {
+				fmt.Println("注册完成")
 				client.Registered = true
 			}
-
-
+			//调阅视频的消息
+			if string(packet.Cseq.Method) == "INVITE" {
+				fmt.Println("收到调阅视频请求，发送Trying")
+				client.UserAddrCode = string(packet.From.User)
+				client.CallId = string(packet.CallId.Value)
+				client.Trying()
+			}
 		}
 	}
 }

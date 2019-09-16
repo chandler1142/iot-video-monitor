@@ -1,7 +1,6 @@
 package b
 
 import (
-	"iot-video-monitor/config"
 	"net"
 )
 
@@ -13,5 +12,6 @@ type Client struct {
 	Registered          bool
 	remoteAddr          *net.UDPAddr
 	localAddr           *net.UDPAddr
-	cfg                 *config.Config
+	SysAddrCode         string
+	UserAddrCode        string
 }
