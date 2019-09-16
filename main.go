@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/google/gopacket/layers"
 	"iot-video-monitor/b"
 	"iot-video-monitor/config"
 	"time"
@@ -22,47 +23,27 @@ func main() {
 
 	client, err := b.NewClient(cfg)
 	if err != nil {
-		fmt.Println("Create client fail: %v", err)
+		fmt.Printf("Create client fail: %v \n", err)
 	}
 
 	defer client.Close()
 
-	go client.Recv()
+	eventChan := make(chan *layers.SIP, 16)
+	go client.Recv(eventChan)
+	go client.ProcessPacket(eventChan)
 
-	ch := time.After(5 * time.Second)
+
 	for {
+		ch := time.After(5 * time.Second)
 		select {
 		case <-ch:
 			fmt.Println("Try to register to srever...")
-			client.Register()
-			//default:
-			//	fmt.Printf("Listening...\n")
-			//read from UDPConn here
+			if !client.Registered {
+				client.Register()
+			} else {
+				fmt.Println("注册完成")
+			}
 		}
 	}
-
-	//
-	//
-	//// write a message to server
-	//packetData := map[string]string{"Call-ID": "306366781@172_16_254_66", "Contact": "<sip:bob@172.16.254.66:5060>"}
-	//p := gopacket.NewPacket(packetData, LinkTypeEthernet, gopacket.Default)
-	//
-	//
-	//
-	//
-	//
-	//
-	//n, err := conn.Write(message)
-	//
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//
-	//// receive message from server
-	//buffer := make([]byte, 1024)
-	//n, addr, err := conn.ReadFromUDP(buffer)
-	//
-	//fmt.Println("UDP Server : ", addr)
-	//fmt.Println("Received from UDP server : ", string(buffer[:n]))
 
 }

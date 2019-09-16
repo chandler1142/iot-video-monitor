@@ -3,25 +3,13 @@ package b
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/google/gopacket/layers"
 	"io/ioutil"
 	"iot-video-monitor/config"
 	"log"
-	"math/rand"
 	"net"
 	"strconv"
-	"time"
 )
-
-type Client struct {
-	conn                net.Conn
-	CallId              string
-	FromTag             string
-	MessageTemplatePath string
-	registered          bool
-	remoteAddr          *net.UDPAddr
-	localAddr           *net.UDPAddr
-	cfg                 *config.Config
-}
 
 func NewClient(cfg *config.Config) (*Client, error) {
 
@@ -51,7 +39,7 @@ func NewClient(cfg *config.Config) (*Client, error) {
 	return &Client{
 		conn:                conn,
 		MessageTemplatePath: cfg.TemplatePath,
-		registered:          false,
+		Registered:          false,
 		remoteAddr:          RemoteAddr,
 		localAddr:           LocalAddr,
 		cfg:                 cfg,
@@ -65,23 +53,13 @@ func (client *Client) Close() {
 	client.conn.Close()
 }
 
-//REGISTER sip:22.46.93.183 SIP/2.0
-//From: <sip:100010000003010002@22.46.93.183>;tag=447226015
-//To: <sip:100010000003010002@22.46.93.183>
-//Call-ID: 1702005310
-//Via: SIP/2.0/UDP 22.46.93.196:5060;rport;branch=z9hG4bK916029210
-//CSeq: 38 REGISTER
-//Contact: <sip:100010000003010002@22.46.93.196:5060>
-//Max-Forwards: 70
-//User-Agent: IP CAMERA
-//Expires: 100
-//Content-Length: 0
 func (client *Client) Register() bool {
 	buf, err := ioutil.ReadFile(client.MessageTemplatePath + "register")
 	if err != nil {
 		fmt.Printf("open file error: %v \n", err)
 		return false
 	}
+
 	template := string(buf)
 	message := fmt.Sprintf(template,
 		client.remoteAddr.IP,
@@ -104,7 +82,7 @@ func (client *Client) Register() bool {
 }
 
 //启动监听终端接收指令的goroutine
-func (client *Client) Recv() {
+func (client *Client) Recv(packetChan chan *layers.SIP) {
 	if client.conn == nil {
 		fmt.Println("robot connection has not initialized...")
 		return
@@ -123,17 +101,22 @@ func (client *Client) Recv() {
 			fmt.Printf("received error packet is: %s \n", hex.EncodeToString(buf[:]))
 			break
 		}
+		sipPacket := layers.NewSIP()
+		sipPacket.DecodeFromBytes(buf[:n], nil)
 		fmt.Printf("\n===== Receive message: =====\n%v \n", string(buf[:n]))
+		packetChan <- sipPacket
 	}
 }
 
-func GetRandomString(l int) string {
-	str := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	bytes := []byte(str)
-	result := []byte{}
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for i := 0; i < l; i++ {
-		result = append(result, bytes[r.Intn(len(bytes))])
+func (client *Client) ProcessPacket(packetChan chan *layers.SIP) {
+	for {
+		select {
+		case packet := <-packetChan:
+			if packet.GetFirstHeader("cseq") == "REGISTER" && packet.ResponseCode == 200 {
+				client.Registered = true
+			}
+
+
+		}
 	}
-	return string(result)
 }
