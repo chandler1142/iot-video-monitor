@@ -81,14 +81,6 @@ func (client *Client) Register() bool {
 	return true
 }
 
-//SIP/2.0 100 Trying
-//Via: SIP/2.0/UDP 22.46.93.183:5060;rport=5060;branch=z9hG4bK492ad
-//From: <sip:a978bab1a7c84c34bc3fd51d87c5c5da@22.46.93.183>;tag=40416f28
-//To: <sip:100010000003010002@22.46.93.183>
-//Call-ID: 2264a412a386@22.46.93.183
-//CSeq: 1 INVITE
-//User-Agent: IP CAMERA
-//Content-Length: 0
 func (client *Client) Trying() {
 	buf, err := ioutil.ReadFile(client.MessageTemplatePath + "trying")
 	if err != nil {
