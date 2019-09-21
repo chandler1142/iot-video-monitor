@@ -37,7 +37,7 @@ func NewClient(cfg *config.Config) (*Client, error) {
 	log.Printf("Local UDP client address : %s \n", conn.LocalAddr().String())
 
 	return &Client{
-		conn:                conn,
+		Conn:                conn,
 		MessageTemplatePath: cfg.TemplatePath,
 		Registered:          false,
 		remoteAddr:          RemoteAddr,
@@ -50,7 +50,7 @@ func NewClient(cfg *config.Config) (*Client, error) {
 }
 
 func (client *Client) Close() {
-	client.conn.Close()
+	client.Conn.Close()
 }
 
 func (client *Client) Register() bool {
@@ -76,7 +76,7 @@ func (client *Client) Register() bool {
 		client.localAddr.Port,
 		3600,
 	)
-	client.conn.Write([]byte(message))
+	client.Conn.Write([]byte(message))
 	fmt.Printf("\n ===== Send message： =====\n%s\n", message)
 	return true
 }
@@ -100,13 +100,13 @@ func (client *Client) Trying() {
 		client.remoteAddr.IP,
 		client.CallId,
 	)
-	client.conn.Write([]byte(message))
+	client.Conn.Write([]byte(message))
 	fmt.Printf("\n ===== Send message： =====\n%s\n", message)
 }
 
 //启动监听终端接收指令的goroutine
 func (client *Client) Recv(packetChan chan siprocket.SipMsg) {
-	if client.conn == nil {
+	if client.Conn == nil {
 		fmt.Println("robot connection has not initialized...")
 		return
 	}
@@ -114,7 +114,7 @@ func (client *Client) Recv(packetChan chan siprocket.SipMsg) {
 
 	//接收数据包，并解析
 	for {
-		n, err := client.conn.Read(buf[:])
+		n, err := client.Conn.Read(buf[:])
 
 		if n == 0 {
 			continue

@@ -5,7 +5,7 @@ import (
 )
 
 type Client struct {
-	conn                net.Conn
+	Conn                net.Conn
 	CallId              string
 	FromTag             string
 	MessageTemplatePath string
