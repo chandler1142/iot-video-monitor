@@ -1,2 +1,4 @@
+github.com/gen2brain/x264-go v0.0.0-20180306035800-58f586137654 h1:RNpogAT5Qz69YLIu6+92q5sSw61PjjhDj4upH2el5pk=
+github.com/gen2brain/x264-go v0.0.0-20180306035800-58f586137654/go.mod h1:17kvfYQKi9/QHiKPeqmJW0YuDPZEgy72tSBVmweSyiE=
 github.com/marv2097/siprocket v0.0.0-20190829114445-b2fe8c7d1589 h1:THpJtV1kQGYqdLuoGSEFmnoT4HC6IBUIpkRC4zG1fvo=
 github.com/marv2097/siprocket v0.0.0-20190829114445-b2fe8c7d1589/go.mod h1:ugcl88hxQtl/mELfV2aI++IuON0tVkBG4HJfDLvzVb0=

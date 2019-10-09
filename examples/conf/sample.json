@@ -1,6 +1,6 @@
 {
   "serverIP": "127.0.0.1",
-  "serverPort": 10011,
+  "serverPort": 5222,
   "sysAddrCode" : "100010055101030000",
   "serverDomain" : "20.46.240.19",
   "localIp": "127.0.0.1",
